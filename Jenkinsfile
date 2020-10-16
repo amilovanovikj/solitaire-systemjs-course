@@ -4,66 +4,84 @@ pipeline {
         // continuous integration
         notify('Build started')
         stage('Checkout SCM'){
-            checkout scm
+            steps {
+                checkout scm
+            }
             // git branch: 'jenkins2-course', 
             //     url: 'https://github.com/g0t4/solitaire-systemjs-course'
         }
         stage('Pull dependencies'){
-            sh 'npm install'
+            steps {
+                sh 'npm install'
+            }
         }
         stage('Stash code & dependencies'){
-            stash name: 'everything', 
-                excludes: 'test-results/**', 
-                includes: '**'
+            steps {
+                stash name: 'everything', 
+                    excludes: 'test-results/**', 
+                    includes: '**'
+            }
         }
         stage('Test'){
-            sh 'npm run test-single-run -- --browsers PhantomJS'
+            steps {
+                sh 'npm run test-single-run -- --browsers PhantomJS'
+            }
         }
         stage('Archive'){
-            step([$class: 'JUnitResultArchiver', 
-                testResults: 'test-results/**/test-results.xml'])
-            archiveArtifacts artifacts: 'app/', followSymlinks: false
+            steps {
+                step([$class: 'JUnitResultArchiver', 
+                    testResults: 'test-results/**/test-results.xml'])
+                archiveArtifacts artifacts: 'app/', followSymlinks: false
+            }
         }
 
         // demoing a second agent
         stage('Clean up'){
             node('ubuntu'){
-                sh 'ls'
-                sh 'rm -rf *'
-                unstash 'everything'
-                sh 'ls'
+                steps {
+                    sh 'ls'
+                    sh 'rm -rf *'
+                    unstash 'everything'
+                    sh 'ls'
+                }
             }
         }
 
         // parallel integration testing
         stage('Browser testing'){
-            try {
-                parallel chrome: {
-                    runTests("Chrome")
-                }, firefox: {
-                    runTests("Firefox")
-                }, safari: {
-                    runTests("Safari")
+            steps{
+                try {
+                    parallel chrome: {
+                        runTests("Chrome")
+                    }, firefox: {
+                        runTests("Firefox")
+                    }, safari: {
+                        runTests("Safari")
+                    }
+                } catch(err) {
+                    notify("Error: ${err}")
+                    currentBuild.result = 'FAILURE'
                 }
-            } catch(err) {
-                notify("Error: ${err}")
-                currentBuild.result = 'FAILURE'
             }
         }
 
         // deployment
         stage('Approve deployment') {
-            node {
-                notify("Deploy to staging?")
+            steps {
+                node {
+                    notify("Deploy to staging?")
+                }
+                input 'Deploy to staging?'
             }
-            input 'Deploy to staging?'
         }
 
         stage('Deploy') {
             node {
-                sh "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
-                sh 'docker-compose up -d --build'
-                notify('App Deployed! You can find it on localhost:3000')
+                steps{
+                    sh "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
+                    sh 'docker-compose up -d --build'
+                    notify('App Deployed! You can find it on localhost:3000')
+                }
             }
         }
     }
