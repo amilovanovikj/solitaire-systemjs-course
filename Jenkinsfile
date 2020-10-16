@@ -2,7 +2,11 @@ pipeline {
     agent any
     stages {
         // continuous integration
-        notify('Build started')
+        stage('Notify') {
+            steps {
+                notify('Build started')
+            }
+        }
         stage('Checkout SCM'){
             steps {
                 checkout scm
@@ -37,8 +41,8 @@ pipeline {
 
         // demoing a second agent
         stage('Clean up'){
-            node('ubuntu'){
-                steps {
+            steps {
+                node('ubuntu'){
                     sh 'ls'
                     sh 'rm -rf *'
                     unstash 'everything'
@@ -76,8 +80,8 @@ pipeline {
         }
 
         stage('Deploy') {
-            node {
-                steps{
+            steps{
+                node {
                     sh "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
                     sh 'docker-compose up -d --build'
                     notify('App Deployed! You can find it on localhost:3000')
