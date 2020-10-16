@@ -54,7 +54,7 @@ pipeline {
         // parallel integration testing
         stage('Browser testing'){
             steps {
-                step {
+                script {
                     try {
                         parallel chrome: {
                             runTests("Chrome")
