@@ -53,18 +53,20 @@ pipeline {
 
         // parallel integration testing
         stage('Browser testing'){
-            steps{
-                try {
-                    parallel chrome: {
-                        runTests("Chrome")
-                    }, firefox: {
-                        runTests("Firefox")
-                    }, safari: {
-                        runTests("Safari")
+            steps {
+                step {
+                    try {
+                        parallel chrome: {
+                            runTests("Chrome")
+                        }, firefox: {
+                            runTests("Firefox")
+                        }, safari: {
+                            runTests("Safari")
+                        }
+                    } catch(err) {
+                        notify("Error: ${err}")
+                        currentBuild.result = 'FAILURE'
                     }
-                } catch(err) {
-                    notify("Error: ${err}")
-                    currentBuild.result = 'FAILURE'
                 }
             }
         }
@@ -72,7 +74,7 @@ pipeline {
         // deployment
         stage('Approve deployment') {
             steps {
-                node {
+                node('master') {
                     notify("Deploy to staging?")
                 }
                 input 'Deploy to staging?'
@@ -81,7 +83,7 @@ pipeline {
 
         stage('Deploy') {
             steps{
-                node {
+                node('master') {
                     sh "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
                     sh 'docker-compose up -d --build'
                     notify('App Deployed! You can find it on localhost:3000')
