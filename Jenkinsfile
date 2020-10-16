@@ -1,6 +1,7 @@
 pipeline {
     agent any
     stages {
+        
         // continuous integration
         stage('Notify') {
             steps {
@@ -11,8 +12,6 @@ pipeline {
             steps {
                 checkout scm
             }
-            // git branch: 'jenkins2-course', 
-            //     url: 'https://github.com/g0t4/solitaire-systemjs-course'
         }
         stage('Pull dependencies'){
             steps {
@@ -86,7 +85,14 @@ pipeline {
                 node('master') {
                     sh "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
                     sh 'docker-compose up -d --build'
-                    notify('App Deployed! You can find it on localhost:3000')
+                }
+            }
+            post {
+                success {
+                    notify('App Deployed!\nYou can find it on localhost:3000\n')
+                }
+                failure {
+                    notify('App deployment failed!')
                 }
             }
         }
